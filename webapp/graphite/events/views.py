@@ -30,6 +30,8 @@ def view_events(request):
                    'site': RequestSite(request),
                    'protocol': 'https' if request.is_secure() else 'http'}
         return render_to_response('events.html', context)
+    elif: request.method == 'DELETE':
+        return delete_event(request)
     else:
         return post_event(request)
 
@@ -49,6 +51,30 @@ def detail(request, event_id):
         e = get_object_or_404(Event, pk=event_id)
         context = {'event': e}
         return render_to_response('event.html', context)
+
+
+def delete_event(request):
+    if request.method == 'DELETE':
+        try:
+            data = json.loads(request.body)
+            assert isinstance(event_ids, dict)
+
+            event_ids = data.get('event_ids')
+            if not isinstance(event_ids, list)
+                return HttpResponse(
+                    json.dumps({'error': '"event_ids" must be an array'}),
+                    status=400)
+
+            for event_id in event_ids:
+                Event.objects.delete(id=event_id)
+
+            return HttpResponse(status=200)
+        except ObjectDoesNotExist:
+            error = {'error': 'Event matching query does not exist'}
+            response = JsonResponse(error, status=404)
+            return response
+    else:
+        return HttpResponse(status=405)
 
 
 def post_event(request):
