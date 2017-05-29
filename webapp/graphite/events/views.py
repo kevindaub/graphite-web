@@ -33,7 +33,7 @@ def view_events(request):
     elif: request.method == 'DELETE':
         return delete_event(request)
     else:
-        return post_event(request)
+        return save_event(request)
 
 
 def detail(request, event_id):
@@ -77,8 +77,8 @@ def delete_event(request):
         return HttpResponse(status=405)
 
 
-def post_event(request):
-    if request.method == 'POST':
+def save_event(request):
+    if request.method == 'POST' || request.method == 'PUT':
         event = json.loads(request.body)
         assert isinstance(event, dict)
 
@@ -96,12 +96,28 @@ def post_event(request):
         else:
             when = now()
 
-        Event.objects.create(
-            what=event.get('what'),
-            tags=tags,
-            when=when,
-            data=event.get('data', ''),
-        )
+        if request.method == 'POST':
+            Event.objects.create(
+                what=event.get('what'),
+                tags=tags,
+                when=when,
+                data=event.get('data', ''),
+            )
+        elif request.method == 'PUT':
+            event_id = event.get('id')
+            try:
+                e = Event.objects.get(id=event_id)
+                e.what = event.get('what')
+                e.tags = tags
+                e.when = when
+                e.data = event.get('data', '')
+                e.save()
+            except ObjectDoesNotExist:
+                error = {'error': 'Event matching query does not exist'}
+                response = JsonResponse(error, status=404)
+                return response
+        else
+            return HttpResponse(status=405)
 
         return HttpResponse(status=200)
     else:
